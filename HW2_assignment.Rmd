@@ -1,0 +1,201 @@
+---
+title: "Homework 2"
+author: "Araks Karapetyan"
+date: "10.10.2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
+```
+
+## we will be using housing dataset and you are also provided with the  the description of that data set
+
+(2 point) Load the data housing.csv and check whether the data types are correct, if not, make appropriate corrections assigning labels to each level according to the data description, so that it will be easy to interprete the model results during the next steps.
+
+Pay attention to the variable grade. You can use function cut() here os something like it.
+
+```{r}
+housing <- read.csv("housing.csv")
+housing$waterfront <- factor(housing$waterfront)
+housing$view <- factor(housing$view)
+housing$condition <- factor(housing$condition)
+housing$grade <- cut(x=housing$grade, breaks = c(1, 3, 7, 11, 13), labels = c("Short", "Below average", "Above average", "High"))
+```
+
+(2 points) Create a variable with building's age (The data is collected at 2018). visualize the relationship between the newly created variable with the price and comment whether it can be significant predictor for the price.
+
+```{r}
+age <- 2018 - housing$yr_built
+age
+library(ggplot2)
+ggplot(housing, aes(x = age, y = price))+geom_point()+
+  labs(x = "Age", y = "Price", title = "Relationship between Age and Price")
+```
+
+(2 points) Our goal in this analysis will be building a model to predict the price of houses as accurately as possible. First, write a code to check what variables are highly correlated with the price variable.
+Hint: use function ?cor()
+
+```{r}
+cor(housing$price, housing[,sapply(housing,is.numeric)])
+#The variables that are highly correlated with the price are sqft_living and sqft_above.
+```
+
+(3 points) Visualize the relationship between the independent variables. In case you see it might cause multicolinearity  during the modeling, also print correlation coeficients and make a note to act accordingly during modeling.
+Hint: usually variables having more than 0.7 correlation coeficients might cause multicolinearity.
+
+1. the relationship between numbeer of bedrooms and living area in sqft
+
+```{r}
+ggplot(housing, aes(x = bedrooms, y = sqft_living))+geom_point()+
+  labs(x = "Bedrooms", y = "Living area in square feet", title = "Relationship between Number of Bedrooms and Living area in Square Feet")
+cor(housing$bedrooms, housing$sqft_living)
+#Comment: As the correlation is less than 0.7 we can use both.
+```
+2. the relationship betweeen the living area in sqft and the number of bathrooms
+
+```{r}
+ggplot(housing, aes(x = sqft_living, y = bathrooms))+geom_point()+
+  labs(x = "Living area in square feet", y = "Bedrooms", title = "Relationship between Living area in Square Feet and the Number of Bathrooms")
+cor(housing$sqft_living, housing$bathrooms)
+#Comment: As the correlation is more than 0.7 we will only use sqft_living because its correlation is higher than the correlation of bathrooms and there is a multicolinearity..
+```
+3. the relationship between number of bedrooms and number of bathrooms
+
+```{r}
+ggplot(housing, aes(x = bedrooms, y = bathrooms))+geom_point()+
+  labs(x = "Bedrooms", y = "Bathrooms", title = "Relationship between the Number of Bedrooms and Bathrooms")
+cor(housing$bedrooms, housing$bathrooms)
+#Comment: As the correlation is less than 0.7 we can use both.
+```
+
+4. the relationship betwen sqft_living and sqft_above 
+
+```{r}
+ggplot(housing, aes(x = sqft_living, y = sqft_above))+geom_point()+
+  labs(x = "Living area", y = "Square footage above ground level", title = "Relationship between the Living area and Sqaure Footage above ground level")
+cor(housing$sqft_living, housing$sqft_above)
+#Comment: As the correlation is more than 0.7 we will only use sqft_living because its correlation is higher than the correlation of sqft_above.
+```
+
+(5 point) Usig ggplot visualizations explore the relationships between categorical variables and price.
+Also try to visualize whether the relationship between price and other numeric variables differ based on categorical variables such as waterfront, view, condition and grade.
+
+```{r}
+ggplot(housing, aes(x = waterfront, y = price))+geom_boxplot()+
+  labs(x = "Waterfront", y = "Price", title = "Relationship between Waterfront and Price")
+ggplot(housing, aes(x = view, y = price))+geom_boxplot()+
+  labs(x = "View", y = "Price", title = "Relationship between View and Price")
+ggplot(housing, aes(x = condition, y = price))+geom_boxplot()+
+  labs(x = "Condition", y = "Price", title = "Relationship between Condition and Price")
+ggplot(housing, aes(x = grade, y = price))+geom_boxplot()+
+  labs(x = "Grade", y = "Price", title = "Relationship between Grade and Price")
+ggplot(housing, aes(x = sqft_living, y = price))+geom_point()+
+  facet_grid("Waterfront")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_living, y = price))+geom_point()+
+  facet_grid("View")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_living, y = price))+geom_point()+
+  facet_grid("Condition")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_living, y = price))+geom_point()+
+  facet_grid("Grade")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_living15, y = price))+geom_point()+
+  facet_grid("Waterfront")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_living15, y = price))+geom_point()+
+  facet_grid("View")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_living15, y = price))+geom_point()+
+  facet_grid("Condition")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_living15, y = price))+geom_point()+
+  facet_grid("Grade")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_above, y = price))+geom_point()+
+  facet_grid("Waterfront")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_above, y = price))+geom_point()+
+  facet_grid("View")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_above, y = price))+geom_point()+
+  facet_grid("Condition")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+ggplot(housing, aes(x = sqft_above, y = price))+geom_point()+
+  facet_grid("Grade")+labs(x = "Leaving are in Square Feet", y = "Price", title = "Relationship between Living are in Square Feet and Price")
+```
+
+(1 point) divide the dataframe into Train and Test including in the Train dataset 80% of the observations and 20%, respectively, in Test dataset.
+
+```{r}
+set.seed(1)
+sample <- sample(nrow(housing), floor(nrow(housing) * 0.8))
+Train <- housing[sample,]
+Test <- housing[-sample,]
+```
+
+(4 points) Build an initial model on Training dataset including as predictors all possible variables and comment on the model performance based on R square and R square Adjusted (which one will you use in this case).
+
+```{r}
+model1 <- lm(price~.-zipcode-long-lat-date-id, data = Train)
+summary(model1)
+#Comment: As R square adjusted is a better indicator for a model I will use that instead of R square. As R square adjusted is 0.6564 we can conclude that our model is quite good.
+```
+
+(5 points) What variables are signifcant predictors in the model?
+Comment on the relationships between each independent variable with the dependent variable. (Be attentive in determining the reference group while interpreting the relatipnships in case of categorical variable)
+
+```{r}
+#The significat predictors of the model are bathrooms,view, condition, bedrooms and floors.
+#Bathrooms - One unit increase in bathrooms increases the price by $4.9.
+#View - The average price of houses having 0 property of view are less than the prices of houses having 1 property by $1.05.
+#The average price of houses having 0 property of view are less than the prices of houses having 2 property by $5.4.
+#The average price of houses having 0 property of view are less than the prices of houses having 3 property by $1.1.
+#The average price of houses having 0 property of view are less than the prices of houses having 4 property by $3.02.
+#Condition - The average price of houses having condition 1 are lower than the prices of the houses having having condition 2 by $4.9.
+#The average price of houses having condition 1 are lower than the prices of the houses having having condition 3 by $7.6.
+#The average price of houses having condition 1 are lower than the prices of the houses having having condition 4 by $8.8.
+#The average price of houses having condition 1 are lower than the prices of the houses having having condition 5 by $1.3.
+#Bedrooms - One unit increase in bedrooms decreases the price by $4.06 but obviously this does not make any sense.
+#Floors - Increase in floor will cause an increase in price by $4.1.
+#Sqft_living - If we increase the living space by 1 sqft, the price will increase by $1.8.
+#Sqft_lot - An increase in the land space by 1 square foot, will decrease the price by $1.8 and again does not make sense.
+#Waterfront - The average price of the house that has a waterfront(1) is by $4.57 more than the house that hasn't(0).
+#Sqft_living15 - If the living space for the nearest 15 neighbors increases by 1 sqft, the price will increase by $5.4.
+#Sqft_lot15 - If the land lots of the nearest 15 neighbors increases by 1 sqft, the price decreases by $6.1 but does not make sense.
+#Grade - The average prices of the houses that are "high" of building on construction and design are higher than those that are "short" by $5.5.
+#Yr_built - Every year that is passing after the house was built will decrease the price by $3.1.
+#Yr_renovated - Every year that is passing after the house was renovated will increase the price by $1.6.
+```
+
+(4 points) Remove the variables you consider might cause multicolinearity, explain the logic how you decide to omit this or that variable from the correlated pairs. Comment on the changes of model performance based on R square and coefficients.
+
+```{r}
+model2<-lm(price~.-sqft_above-bathrooms-zipcode-long-lat-date-id, data=housing)
+summary(model2)
+#Since the correlation between bathrooms and sqft_living is more than 0.7 we can say that there is a multicolinearity. The correlation between sqft_living and price is 0.7 and between bathrooms and price is 0.5. So we better exclude bathrooms from our model.
+#Since the correlation between sqft_above and sqft_living is more than 0.7 we can say that there is a multicolinearity. The correlation between sqft_living and price is 0.7 is higher than the correlation between sqft_above and price so we better exclude sqft_above from our model.
+```
+
+(3 points) Try changing the reference group for grade variable to be high,(use the function ?relevel)
+run and save the 3rd model. Comment on the changes of coefficients, their significance and the overall model performance. 
+
+```{r}
+housing <- within(housing, grade <- relevel(grade, ref = "High"))
+model3<-lm(housing$price~.-sqft_above-bathrooms-zipcode-long-lat-date-id, data=housing)
+summary(model3)
+#The higher variation in price is explained by model1 variables than in model3 mainly because R square adjusted is higher is model 1 than in model3. This is explaind by the fact that we exclude some of the variables that were causing multicolinearity but at meanwhile it made our model better.
+```
+
+
+(3 points) Make predictions on the testing data set using all 3 models, calculate RMSE and comment what model is doing better
+
+```{r}
+Train<-na.omit(Train)
+Test<-na.omit(Test)
+predmod1<-predict(model1, newdata = Test)
+RMSE1<-sqrt(mean((predmod1-Test$price)^2))
+RMSE1
+predmod2<-predict(model2, newdata = Test)
+RMSE2<-sqrt(mean((predmod2-Test$price)^2))
+RMSE2
+predmod3<-predict(model3, newdata = Test)
+RMSE3<-sqrt(mean((predmod3-Test$price)^2))
+RMSE3
+#As we can see RMSE2 and RMSE3 are equal however RMSE1 is slightly lower. This is again the result of excluding variable that caused multicolinearity in the models. This also causes that our model3 be better than model1.
+```
+
